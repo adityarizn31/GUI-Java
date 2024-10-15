@@ -190,6 +190,11 @@ public class Apps extends javax.swing.JFrame {
         });
 
         btnCari.setText("Cari");
+        btnCari.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCariActionPerformed(evt);
+            }
+        });
 
         btnSimpan.setText("Simpan");
         btnSimpan.addActionListener(new java.awt.event.ActionListener() {
@@ -382,6 +387,42 @@ public class Apps extends javax.swing.JFrame {
     }//GEN-LAST:event_btnHapusActionPerformed
 
     private void btnSimpanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSimpanActionPerformed
+
+        try {
+        String sql = "INSERT INTO datamahas (nama_siswa, nim, jenis_kelamin, kelas, jurusan, tempat_lahir, tanggal_lahir) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        PreparedStatement st = conn.prepareStatement(sql);
+        
+        // Mengambil data dari form input
+        String namaSiswa = tfNama.getText();
+        int nim = Integer.parseInt(tfNim.getText());
+        String jenisKelamin = laki.isSelected() ? "Laki - Laki" : "Perempuan";
+        String kelas = reguler.isSelected() ? "Reguler" : "Non - Reguler";
+        String jurusan = jurusanBox.getSelectedItem().toString();
+        String tempatLahir = tfTempatLahir.getText();
+
+        // Mengambil tanggal dari JCalendar dan mengubahnya menjadi java.sql.Date
+        java.util.Date utilDate = jCalendar.getDate();
+        java.sql.Date sqlDate = new java.sql.Date(utilDate.getTime());
+        
+        // Mengisi parameter SQL dengan data yang sudah diambil
+        st.setString(1, namaSiswa);
+        st.setInt(2, nim);
+        st.setString(3, jenisKelamin);
+        st.setString(4, kelas);
+        st.setString(5, jurusan);
+        st.setString(6, tempatLahir);
+        st.setDate(7, sqlDate);  // Mengatur tanggal lahir
+        
+        // Eksekusi query
+        st.executeUpdate();
+        
+        JOptionPane.showMessageDialog(null, "Data berhasil disimpan");
+        getData();
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(null, "Data gagal disimpan: " + e.getMessage());
+        Logger.getLogger(koneksi.class.getName()).log(Level.SEVERE, null, e);
+    }
+        
 //       String jk = null;
 //       String kelas = null;
 //        
@@ -417,39 +458,6 @@ public class Apps extends javax.swing.JFrame {
 //            JOptionPane.showMessageDialog(this, e.getMessage());
 //        }
 
-try {
-        String sql = "INSERT INTO datamahas (nama_siswa, nim, jenis_kelamin, kelas, jurusan, tempat_lahir, tanggal_lahir) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        PreparedStatement st = conn.prepareStatement(sql);
-        
-        // Mengambil data dari form input
-        String namaSiswa = tfNama.getText();
-        int nim = Integer.parseInt(tfNim.getText());
-        String jenisKelamin = laki.isSelected() ? "Laki - Laki" : "Perempuan";
-        String kelas = reguler.isSelected() ? "Reguler" : "Non - Reguler";
-        String jurusan = jurusanBox.getSelectedItem().toString();
-        String tempatLahir = tfTempatLahir.getText();
-
-        // Mengambil tanggal dari JCalendar dan mengubahnya menjadi java.sql.Date
-        java.util.Date utilDate = jCalendar.getDate();
-        java.sql.Date sqlDate = new java.sql.Date(utilDate.getTime());
-        
-        // Mengisi parameter SQL dengan data yang sudah diambil
-        st.setString(1, namaSiswa);
-        st.setInt(2, nim);
-        st.setString(3, jenisKelamin);
-        st.setString(4, kelas);
-        st.setString(5, jurusan);
-        st.setString(6, tempatLahir);
-        st.setDate(7, sqlDate);  // Mengatur tanggal lahir
-        
-        // Eksekusi query
-        st.executeUpdate();
-        
-        JOptionPane.showMessageDialog(null, "Data berhasil disimpan");
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(null, "Data gagal disimpan: " + e.getMessage());
-        Logger.getLogger(koneksi.class.getName()).log(Level.SEVERE, null, e);
-    }
     }//GEN-LAST:event_btnSimpanActionPerformed
 
     private void tfNamaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tfNamaActionPerformed
@@ -534,6 +542,57 @@ try {
 //            JOptionPane.showMessageDialog(null, "Gagal Mengubah Data");
 //        }
     }//GEN-LAST:event_btnEditActionPerformed
+
+    private void btnCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCariActionPerformed
+    try {
+        // Query SQL untuk mencari data mahasiswa berdasarkan nim
+        String sql = "SELECT * FROM datamahas WHERE nim = ?";
+        PreparedStatement st = conn.prepareStatement(sql);
+
+        // Mengambil nilai nim dari form input
+        int nim = Integer.parseInt(tfNim.getText());
+
+        // Mengisi parameter SQL dengan nim
+        st.setInt(1, nim);
+
+        // Eksekusi query dan ambil hasilnya
+        ResultSet rs = st.executeQuery();
+
+        // Mengecek apakah data ditemukan
+        if (rs.next()) {
+            // Jika data ditemukan, set nilai input form dengan data dari database
+            tfNama.setText(rs.getString("nama_siswa"));
+            
+            if (rs.getString("jenis_kelamin").equals("Laki - Laki")) {
+                laki.setSelected(true);
+            } else {
+                perempuan.setSelected(true);
+            }
+            
+            if (rs.getString("kelas").equals("Reguler")) {
+                reguler.setSelected(true);
+            } else {
+                nonreguler.setSelected(true);
+            }
+            
+            jurusanBox.setSelectedItem(rs.getString("jurusan"));  // Set JComboBox jurusan
+            tfTempatLahir.setText(rs.getString("tempat_lahir"));
+            
+            // Set nilai tanggal pada JCalendar
+            java.util.Date tglLahir = rs.getDate("tanggal_lahir");
+            jCalendar.setDate(tglLahir);
+            
+            JOptionPane.showMessageDialog(null, "Data ditemukan!");
+        } else {
+            // Jika data tidak ditemukan
+            JOptionPane.showMessageDialog(null, "Data tidak ditemukan!");
+        }
+
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(null, "Terjadi kesalahan: " + e.getMessage());
+        Logger.getLogger(koneksi.class.getName()).log(Level.SEVERE, null, e);
+    }
+    }//GEN-LAST:event_btnCariActionPerformed
 
     /**
      * @param args the command line arguments
